@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vault Stream | Survival Run</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #111116;
+            --primary: #00ff9d; /* Neon Green */
+            --danger: #ff0055;  /* Neon Red/Pink */
+            --warn: #ffae00;    /* Neon Orange */
+            --info: #00ccff;    /* Neon Blue */
+            --gold: #ffd700;    /* Gold */
+            --text: #ffffff;
+            --text-dim: #666666;
+            --font-main: 'Courier New', Courier, monospace;
+            --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-main);
+            overflow: hidden; /* Prevent scroll, game is fixed viewport */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                linear-gradient(rgba(0, 255, 157, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 157, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* --- UI OVERLAYS --- */
+        .scanline {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.3) 51%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0.3;
+        }
+
+        /* --- HEADER --- */
+        header {
+            padding: 10px 15px;
+            background: var(--surface);
+            border-bottom: 1px solid #333;
+            z-index: 20;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+
+        .jackpots {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: var(--gold);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .jackpot-item span {
+            display: block;
+            font-weight: bold;
+            font-size: 0.8rem;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+        }
+
+        .status-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .balance-group {
+            flex: 1;
+        }
+
+        .balance-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .balance-container {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px var(--primary);
+            line-height: 1;
+        }
+
+        .currency { color: var(--primary); font-size: 1.2rem; vertical-align: middle; }
+
+        /* Health Bar Visual */
+        .health-track {
+            width: 100%;
+            max-width: 200px;
+            height: 4px;
+            background: #222;
+            margin-top: 5px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 20%; /* Init at 20% (100/500 scale) */
+            transition: width 0.5s ease-out, background-color 0.3s;
+            box-shadow: 0 0 5px var(--primary);
+        }
+
+        .btn-cashout {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 10px 24px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            transition: transform 0.1s;
+            margin-left: 15px;
+        }
+
+        .btn-cashout:active { transform: scale(0.95); }
+        .btn-cashout:disabled { background: #333; color: #555; pointer-events: none; }
+
+        /* --- GAME STAGE --- */
+        #game-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Start from top */
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden; /* Hide overflowing old rows */
+        }
+
+        .row-container {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            max-width: 500px;
+            height: 160px; /* Fixed height for consistency */
+            flex-shrink: 0; /* Prevent shrinking */
+            perspective: 1000px;
+            margin-bottom: 20px;
+            transition: transform 0.5s var(--ease-out), opacity 0.5s;
+        }
+
+        /* Styles for previous rows (The Stream Effect) */
+        .row-container.past-row {
+            opacity: 0.3;
+            transform: scale(0.95) translateY(10px);
+            pointer-events: none; /* Disable clicking old rows */
+            filter: grayscale(0.8);
+        }
+        
+        .row-container.past-row-2 {
+            opacity: 0.1;
+            transform: scale(0.9) translateY(20px);
+        }
+
+        .door {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s var(--ease-out);
+            overflow: hidden;
+        }
+
+        /* Door States */
+        .door:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .door.disabled { pointer-events: none; }
+
+        /* Content inside door (hidden initially) */
+        .door-content {
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+        }
+
+        .door-icon { font-size: 3rem; margin-bottom: 10px; display: block; }
+        .door-value { font-size: 1.2rem; font-weight: bold; display: block; }
+        .door-desc { font-size: 0.7rem; text-transform: uppercase; color: #888; display: block; margin-top: 5px;}
+
+        /* Revealed State - Selected */
+        .door.opened {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #fff;
+            transform: scale(1.05);
+            z-index: 2;
+        }
+        .door.opened .door-content { opacity: 1; transform: scale(1); }
+
+        /* Revealed State - Ghost/Missed */
+        .door.ghost {
+            opacity: 0.4;
+            filter: grayscale(100%);
+            border-color: #333;
+            transform: scale(0.95);
+        }
+        .door.ghost .door-content { opacity: 1; transform: scale(1); }
+
+        /* Type Colors */
+        .type-boost .door-value { color: var(--primary); }
+        .type-heal .door-value { color: var(--info); }
+        .type-damage .door-value { color: var(--warn); }
+        .type-trap .door-value, .type-trap .door-icon { color: var(--danger); }
+        .type-jackpot .door-value { color: var(--gold); }
+
+        /* Animation Classes */
+        .slide-in {
+            animation: slideIn 0.5s var(--ease-out) forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-80px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* --- FOOTER / LOG --- */
+        footer {
+            height: 120px;
+            background: var(--surface);
+            border-top: 1px solid #333;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+        }
+
+        .log-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #222;
+            color: var(--text-dim);
+        }
+        .log-entry.recent { color: #fff; animation: flash 1s; }
+        .log-missed { font-size: 0.7rem; opacity: 0.7; }
+
+        @keyframes flash {
+            0% { background-color: rgba(255, 255, 255, 0.1); }
+            100% { background-color: transparent; }
+        }
+
+        /* --- OVERLAYS --- */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(5px);
+            z-index: 50;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .overlay.active { display: flex; animation: fadeIn 0.3s; }
+
+        .overlay h1 { font-size: 3rem; margin: 0 0 20px 0; text-transform: uppercase; }
+        .overlay p { font-size: 1.2rem; margin-bottom: 30px; }
+        
+        .result-busted h1 { color: var(--danger); text-shadow: 0 0 20px var(--danger); }
+        .result-win h1 { color: var(--primary); text-shadow: 0 0 20px var(--primary); }
+        
+        .btn-restart {
+            background: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .btn-restart:hover { background: #fff; color: #000; }
+
+        /* Hacking Animation */
+        .hack-window {
+            border: 2px solid var(--gold); 
+            padding: 20px; 
+            max-width: 85%; 
+            width: 360px; 
+            background: #000;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+        }
+
+        .hack-header {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .hack-title {
+            color: var(--gold); 
+            font-size: 1.2rem; 
+            margin: 0; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .hack-target-info {
+            background: rgba(255, 215, 0, 0.1);
+            color: #fff;
+            padding: 8px;
+            margin-top: 10px;
+            font-family: var(--font-main);
+            font-weight: bold;
+            font-size: 1rem;
+            border: 1px dashed var(--gold);
+        }
+
+        /* --- PROCESS VIEW --- */
+        #hack-process-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hack-terminal {
+            font-family: 'Courier New', monospace; 
+            color: var(--primary); 
+            text-align: left; 
+            font-size: 0.8rem; 
+            margin-bottom: 15px; 
+            margin-top: 15px;
+            height: 100px; 
+            overflow: hidden;
+            background: rgba(0, 255, 157, 0.05);
+            padding: 10px;
+            border-left: 2px solid var(--primary);
+        }
+
+        .hacking-loader {
+            width: 100%;
+            height: 6px;
+            background: #222;
+            position: relative;
+            overflow: hidden;
+        }
+        .hacking-bar {
+            position: absolute;
+            top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--gold);
+            transition: width 1.5s linear;
+        }
+
+        /* --- RESULT VIEW --- */
+        #hack-result-view {
+            display: none; /* Hidden by default */
+            flex: 1;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.5s;
+        }
+
+        #hack-result-title {
+            font-size: 1.8rem; 
+            margin: 0 0 10px 0; 
+            text-transform: uppercase; 
+            line-height: 1.2;
+        }
+
+        #hack-result-amount {
+            font-size: 3.5rem; 
+            font-weight:bold; 
+            margin: 15px 0;
+            text-shadow: 0 0 20px currentColor;
+        }
+
+        #hack-result-desc {
+            color: #888; 
+            text-transform:uppercase; 
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <div class="scanline"></div>
+
+    <header>
+        <div class="jackpots">
+            <div class="jackpot-item">MINI <span>500</span></div>
+            <div class="jackpot-item">MAJOR <span>2.500</span></div>
+            <div class="jackpot-item">GRAND <span>10.000</span></div>
+        </div>
+        <div class="status-wrapper">
+            <div class="balance-group">
+                <span class="balance-label">Aktuelles Guthaben</span>
+                <div class="balance-container">
+                    <span class="currency">≋</span> <span id="balance-display">100.00</span>
+                </div>
+                <div class="health-track">
+                    <div id="health-bar" class="health-fill"></div>
+                </div>
+            </div>
+            <button id="btn-cashout" class="btn-cashout">AUSZAHLEN</button>
+        </div>
+    </header>
+
+    <div id="game-stage">
+        <!-- Doors injected here via JS -->
+    </div>
+
+    <footer id="history-log">
+        <div style="padding:5px; color:#444; font-size:0.7rem;">SYSTEM BEREIT...</div>
+    </footer>
+
+    <!-- GAME OVER / WIN OVERLAY -->
+    <div id="overlay-result" class="overlay">
+        <h1 id="result-title">VERLOREN</h1>
+        <p id="result-message">Verbindung abgebrochen.</p>
+        <button class="btn-restart" onclick="game.init()">Neustart</button>
+    </div>
+
+    <!-- HACKING OVERLAY -->
+    <div id="overlay-hack" class="overlay" style="background: rgba(0,0,0,0.95);">
+        <div class="hack-window">
+            <div class="hack-header">
+                <h1 class="hack-title">TRESOR-ANGRIFF</h1>
+                <div id="hack-target-display" class="hack-target-info">
+                    ZIEL: UNBEKANNT
+                </div>
+            </div>
+            
+            <!-- PROCESS VIEW -->
+            <div id="hack-process-view">
+                <div class="hacking-loader"><div class="hacking-bar" id="hack-bar"></div></div>
+                <div id="hack-terminal" class="hack-terminal">
+                    > WARTE AUF ZIEL...
+                </div>
+                <p id="hack-status" style="margin-top: 10px; font-family: monospace; color: var(--gold); font-size: 0.75rem; text-transform: uppercase; text-align: right;">
+                    V3.0 BRUTE-FORCE
+                </p>
+            </div>
+
+            <!-- RESULT VIEW (New) -->
+            <div id="hack-result-view">
+                <h2 id="hack-result-title"></h2>
+                <div id="hack-result-amount"></div>
+                <p id="hack-result-desc">TRANSFER ABGESCHLOSSEN</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME CONFIGURATION ---
+        const CONFIG = {
+            initialBalance: 100.00,
+            jackpots: { mini: 500, major: 2500, grand: 10000 },
+            delays: {
+                reveal: 1200, // Time before next row appears
+                hack: 4000,    // Duration of hack process
+                hackResult: 3000 // How long to show the result screen
+            },
+            maxRows: 4 // How many rows to keep visible
+        };
+
+        // --- OPTION DEFINITIONS ---
+        const TYPES = {
+            BOOST: { icon: '🚀', class: 'type-boost', label: 'Boost' },
+            HEAL: { icon: '💎', class: 'type-heal', label: 'Heilen' },
+            DAMAGE: { icon: '🩸', class: 'type-damage', label: 'Schaden' },
+            TRAP: { icon: '💀', class: 'type-trap', label: 'Falle' },
+            JACKPOT: { icon: '🏆', class: 'type-jackpot', label: 'Jackpot' }
+        };
+
+        // --- GAME STATE ---
+        const game = {
+            balance: 0,
+            step: 0,
+            isProcessing: false,
+            currentRow: [], // Stores data for current 3 doors
+            
+            init: function() {
+                this.balance = CONFIG.initialBalance;
+                this.step = 0;
+                this.isProcessing = false;
+                
+                document.getElementById('overlay-result').classList.remove('active');
+                document.getElementById('history-log').innerHTML = '';
+                document.getElementById('game-stage').innerHTML = ''; // Clear stage completely on new game
+                
+                this.updateUI();
+                this.generateNextRow();
+            },
+
+            // --- CORE LOGIC: Row Generation ---
+            generateNextRow: function() {
+                this.step++;
+                const container = document.getElementById('game-stage');
+                
+                // --- STREAM LOGIC: Handle old rows ---
+                // Mark existing rows as 'past'
+                const existingRows = Array.from(container.children);
+                existingRows.forEach((row, idx) => {
+                    row.classList.add('past-row');
+                    if (idx > 0) row.classList.add('past-row-2');
+                });
+                
+                // Cleanup: Keep only maxRows
+                if (existingRows.length >= CONFIG.maxRows) {
+                    container.lastElementChild.remove();
+                }
+
+                // 1. Determine Archetype (Weighted Random)
+                const rand = Math.random();
+                let archetype = '';
+                
+                if (rand < 0.40) archetype = 'SAFE';      // 40%
+                else if (rand < 0.70) archetype = 'MINE'; // 30%
+                else if (rand < 0.90) archetype = 'SQUEEZE'; // 20%
+                else archetype = 'TEASE';                 // 10%
+
+                // 2. Generate Options based on Archetype
+                let options = [];
+
+                if (archetype === 'SAFE') {
+                    // 2 Pos, 1 Neg
+                    options.push(this.createOption('good'));
+                    options.push(this.createOption('good'));
+                    options.push(this.createOption('bad'));
+                } else if (archetype === 'MINE') {
+                    // 1 Pos, 1 Neg, 1 Trap
+                    options.push(this.createOption('good'));
+                    options.push(this.createOption('bad'));
+                    options.push(this.createOption('trap'));
+                } else if (archetype === 'SQUEEZE') {
+                    // 2 Neg, 1 Trap
+                    options.push(this.createOption('bad'));
+                    options.push(this.createOption('bad'));
+                    options.push(this.createOption('trap'));
+                } else { // TEASE
+                    // 1 Jackpot, 2 Bad/Trap
+                    options.push(this.createOption('jackpot'));
+                    options.push(this.createOption('bad'));
+                    options.push(this.createOption('trap'));
+                }
+
+                // 3. Shuffle Positions
+                this.currentRow = options.sort(() => Math.random() - 0.5);
+
+                // 4. Render DOM
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row-container slide-in';
+
+                this.currentRow.forEach((opt, index) => {
+                    const door = document.createElement('div');
+                    door.className = `door ${opt.def.class}`;
+                    door.onclick = (e) => this.handleChoice(index, e);
+                    
+                    // Inner content (Hidden initially)
+                    let displayVal = opt.display;
+                    
+                    door.innerHTML = `
+                        <div class="door-content">
+                            <span class="door-icon">${opt.def.icon}</span>
+                            <span class="door-value">${displayVal}</span>
+                            <span class="door-desc">${opt.def.label}</span>
+                        </div>
+                    `;
+                    rowDiv.appendChild(door);
+                });
+
+                // Prepend to show at top
+                container.prepend(rowDiv);
+            },
+
+            createOption: function(category) {
+                if (category === 'trap') {
+                    return { type: 'TRAP', val: 0, display: 'TOT', def: TYPES.TRAP };
+                }
+                if (category === 'jackpot') {
+                    // Determine which Tier this jackpot is trying to be
+                    const r = Math.random();
+                    let tier = 'MINI';
+                    if (r > 0.6) tier = 'MAJOR'; // 30% chance
+                    if (r > 0.9) tier = 'GRAND'; // 10% chance
+                    
+                    return { type: 'JACKPOT', tier: tier, val: 0, display: '???', def: TYPES.JACKPOT };
+                }
+                
+                if (category === 'good') {
+                    // 50/50 between Multiplier and Heal
+                    if (Math.random() > 0.5) {
+                        const val = (Math.random() * (1.5 - 1.1) + 1.1).toFixed(2); // 1.1x to 1.5x
+                        return { type: 'MULT', val: parseFloat(val), display: `x${val}`, def: TYPES.BOOST };
+                    } else {
+                        const val = Math.floor(Math.random() * 40) + 10; // +10 to +50
+                        return { type: 'ADD', val: val, display: `+${val}`, def: TYPES.HEAL };
+                    }
+                }
+
+                if (category === 'bad') {
+                    // Damage: Percentage cut or flat loss
+                    if (Math.random() > 0.5) {
+                        const val = (Math.random() * (0.9 - 0.6) + 0.6).toFixed(2); // 0.6x to 0.9x
+                        return { type: 'MULT', val: parseFloat(val), display: `x${val}`, def: TYPES.DAMAGE };
+                    } else {
+                        const val = Math.floor(Math.random() * 30) + 10; // -10 to -40
+                        return { type: 'SUB', val: val, display: `-${val}`, def: TYPES.DAMAGE };
+                    }
+                }
+            },
+
+            // --- CORE LOGIC: Interaction ---
+            handleChoice: async function(index, event) {
+                if (this.isProcessing) return;
+                
+                // Prevent clicking old rows
+                const currentContainer = document.querySelector('.row-container:first-child');
+                const clickedRow = event.target.closest('.row-container');
+                if (clickedRow !== currentContainer) return;
+
+                this.isProcessing = true;
+                
+                const choice = this.currentRow[index];
+                const doors = currentContainer.querySelectorAll('.door');
+
+                // 1. Visual Reveal (Ghost Engine)
+                doors.forEach((d, i) => {
+                    d.classList.add('disabled');
+                    if (i === index) {
+                        d.classList.add('opened');
+                    } else {
+                        d.classList.add('ghost'); // The Ghost Reveal
+                    }
+                });
+
+                // 2. Logic Execution
+                let logMsg = "";
+
+                if (choice.type === 'TRAP') {
+                    this.balance = 0;
+                    this.endGame('busted', 'Sicherheitsfalle ausgelöst.');
+                    return;
+                } 
+                
+                else if (choice.type === 'JACKPOT') {
+                    await this.runJackpotSequence(choice, doors[index]);
+                } 
+                
+                else if (choice.type === 'MULT') {
+                    this.balance *= choice.val;
+                    logMsg = `x${choice.val}`;
+                } 
+                
+                else if (choice.type === 'ADD') {
+                    this.balance += choice.val;
+                    logMsg = `+${choice.val}`;
+                } 
+                
+                else if (choice.type === 'SUB') {
+                    this.balance -= choice.val;
+                    logMsg = `-${choice.val}`;
+                }
+
+                // Check survival for standard turns
+                if (this.balance <= 0.01) {
+                    this.balance = 0;
+                    this.endGame('busted', 'Guthaben aufgebraucht.');
+                    return;
+                }
+
+                // Update UI
+                this.updateUI();
+                
+                // Log History (if not jackpot, which handles its own log)
+                if (choice.type !== 'JACKPOT') {
+                    this.addLog(this.step, logMsg, this.currentRow, index);
+                }
+
+                // Prepare Next Turn
+                setTimeout(() => {
+                    this.isProcessing = false;
+                    this.generateNextRow();
+                }, CONFIG.delays.reveal);
+            },
+
+            runJackpotSequence: async function(choice, doorElement) {
+                // Elements
+                const hackOverlay = document.getElementById('overlay-hack');
+                const hackBar = document.getElementById('hack-bar');
+                const hackTerm = document.getElementById('hack-terminal');
+                const hackTargetDisplay = document.getElementById('hack-target-display');
+                
+                // Views
+                const processView = document.getElementById('hack-process-view');
+                const resultView = document.getElementById('hack-result-view');
+                
+                // Reset Views
+                processView.style.display = 'flex';
+                resultView.style.display = 'none';
+
+                // Update Target Info
+                const potentialWin = CONFIG.jackpots[choice.tier.toLowerCase()];
+                hackTargetDisplay.innerText = `ZIEL: ${choice.tier} TRESOR (${potentialWin})`;
+                
+                hackOverlay.classList.add('active');
+                
+                // Reset styling
+                hackBar.style.width = '0%';
+                hackBar.style.transition = 'none';
+                hackTerm.innerHTML = '> VERBINDUNGSAUFBAU...<br>';
+                
+                // Start Animation
+                setTimeout(() => {
+                    hackBar.style.transition = `width ${CONFIG.delays.hack/1000}s linear`;
+                    hackBar.style.width = '100%';
+                }, 50);
+
+                // Simulate Terminal Logs
+                const logs = [
+                    "Firewall: Bypass läuft...",
+                    "Port 443: Offen...",
+                    "Verschlüsselung: AES-256...",
+                    "Schlüssel wird berechnet...",
+                    "Root-Zugriff: WIRD VERSUCHT...",
+                    "Sicherheitsprotokoll: AKTIV!",
+                    "Letzte Hürde..."
+                ];
+                
+                let logIndex = 0;
+                const intervalTime = (CONFIG.delays.hack - 500) / logs.length;
+
+                const logInterval = setInterval(() => {
+                    if(logIndex < logs.length) {
+                        hackTerm.innerHTML += `> ${logs[logIndex]}<br>`;
+                        hackTerm.scrollTop = hackTerm.scrollHeight;
+                        logIndex++;
+                    }
+                }, intervalTime);
+
+                return new Promise(resolve => {
+                    setTimeout(async () => {
+                        clearInterval(logInterval);
+                        
+                        // Determine Outcome
+                        let winChance = 0.10; 
+                        if (choice.tier === 'MINI') winChance = 0.15;
+                        if (choice.tier === 'GRAND') winChance = 0.05;
+
+                        const isWin = Math.random() < winChance;
+                        const resultTitle = document.getElementById('hack-result-title');
+                        const resultAmount = document.getElementById('hack-result-amount');
+                        const resultDesc = document.getElementById('hack-result-desc');
+
+                        // Switch to Result View
+                        processView.style.display = 'none';
+                        resultView.style.display = 'flex';
+                        
+                        if (isWin) {
+                            // WIN STATE
+                            this.balance += potentialWin;
+                            
+                            resultTitle.innerText = "ZUGRIFF ERFOLGREICH";
+                            resultTitle.style.color = "var(--primary)";
+                            
+                            resultAmount.innerText = `+${potentialWin}`;
+                            resultAmount.style.color = "var(--gold)";
+                            
+                            resultDesc.innerText = "TRESOR INHALT TRANSFERIERT";
+
+                            // Door Update
+                            doorElement.querySelector('.door-value').innerText = `+${potentialWin}`;
+                            doorElement.querySelector('.door-desc').innerText = "GEKNACKT!";
+                            doorElement.style.borderColor = 'var(--gold)';
+                            this.addLog(this.step, `${choice.tier} GEWINN +${potentialWin}`, this.currentRow, -1); 
+                        
+                        } else {
+                            // LOSE STATE
+                            const pityAmt = 15;
+                            this.balance += pityAmt;
+                            
+                            resultTitle.innerText = "ZUGRIFF VERWEIGERT";
+                            resultTitle.style.color = "var(--danger)";
+                            
+                            resultAmount.innerText = `+${pityAmt}`;
+                            resultAmount.style.color = "var(--info)";
+                            
+                            resultDesc.innerText = "NUR RESTDATEN GEFUNDEN";
+
+                            // Door Update
+                            doorElement.querySelector('.door-value').innerText = `+${pityAmt}`;
+                            doorElement.querySelector('.door-desc').innerText = "ABGEWEHRT";
+                            doorElement.classList.remove('type-jackpot');
+                            doorElement.classList.add('type-heal');
+                            this.addLog(this.step, `Hack Fehlgeschlagen (+${pityAmt})`, this.currentRow, -1);
+                        }
+                        
+                        this.updateUI();
+
+                        // WAIT TO READ RESULT
+                        await new Promise(r => setTimeout(r, CONFIG.delays.hackResult));
+
+                        // Close Overlay
+                        hackOverlay.classList.remove('active');
+                        resolve();
+
+                    }, CONFIG.delays.hack);
+                });
+            },
+
+            addLog: function(step, result, rowData, pickedIndex) {
+                const history = document.getElementById('history-log');
+                
+                // Find what was missed (Ghost Data)
+                let missedIcons = "";
+                rowData.forEach((opt, i) => {
+                    if (i !== pickedIndex) missedIcons += ` ${opt.def.icon}`;
+                });
+
+                const div = document.createElement('div');
+                div.className = 'log-entry recent';
+                div.innerHTML = `
+                    <span>Schritt ${step}: <strong>${result}</strong></span>
+                    <span class="log-missed">Verpasst: ${missedIcons}</span>
+                `;
+                history.prepend(div);
+                
+                // Remove 'recent' class after animation
+                setTimeout(() => div.classList.remove('recent'), 1000);
+            },
+
+            updateUI: function() {
+                const balEl = document.getElementById('balance-display');
+                balEl.innerText = this.balance.toFixed(2);
+                
+                // Update Health Bar
+                const healthBar = document.getElementById('health-bar');
+                // Calculate percentage based on 500 as "full" visual reference
+                let pct = (this.balance / 500) * 100;
+                if (pct > 100) pct = 100;
+                healthBar.style.width = `${pct}%`;
+
+                // Color based on health
+                if (this.balance > 100) healthBar.style.backgroundColor = 'var(--primary)'; // Green
+                else if (this.balance > 50) healthBar.style.backgroundColor = 'var(--warn)'; // Orange
+                else healthBar.style.backgroundColor = 'var(--danger)'; // Red
+
+                const cashoutBtn = document.getElementById('btn-cashout');
+                if (this.balance <= 0) cashoutBtn.disabled = true;
+                else cashoutBtn.disabled = false;
+            },
+
+            cashout: function() {
+                if (this.balance > 0) {
+                    this.endGame('win', `Du bist mit <span style="color:var(--primary)">${this.balance.toFixed(2)}</span> entkommen.`);
+                }
+            },
+
+            endGame: function(type, message) {
+                this.updateUI();
+                const overlay = document.getElementById('overlay-result');
+                const title = document.getElementById('result-title');
+                const msg = document.getElementById('result-message');
+                
+                overlay.classList.add('active');
+                
+                if (type === 'win') {
+                    overlay.classList.remove('result-busted');
+                    overlay.classList.add('result-win');
+                    title.innerText = "MISSION ERFÜLLT";
+                } else {
+                    overlay.classList.remove('result-win');
+                    overlay.classList.add('result-busted');
+                    title.innerText = "GESCHEITERT";
+                }
+                
+                msg.innerHTML = message;
+            }
+        };
+
+        // --- EVENTS ---
+        document.getElementById('btn-cashout').addEventListener('click', () => game.cashout());
+
+        // Start Game
+        game.init();
+
+    </script>
+</body>
+</html>
