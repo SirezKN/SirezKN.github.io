@@ -76,51 +76,55 @@
             font-weight: bold;
             font-size: 0.8rem;
             text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+            transition: all 0.3s ease;
         }
 
-        .status-wrapper {
+        /* Economy Header Layout */
+        .economy-bar {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
+            align-items: center;
+            gap: 15px;
         }
 
-        .balance-group {
-            flex: 1;
+        .stat-group {
+            display: flex;
+            flex-direction: column;
         }
 
-        .balance-label {
-            font-size: 0.7rem;
+        .stat-label {
+            font-size: 0.6rem;
             color: var(--text-dim);
             text-transform: uppercase;
-            display: block;
-            margin-bottom: 2px;
+            letter-spacing: 1px;
         }
 
-        .balance-container {
-            font-size: 1.8rem;
+        .stat-value {
+            font-size: 1.2rem;
             font-weight: bold;
-            text-shadow: 0 0 10px var(--primary);
-            line-height: 1;
         }
+        
+        .account-value { color: var(--info); }
+        .run-value { color: var(--primary); text-shadow: 0 0 10px rgba(0, 255, 157, 0.3); }
 
-        .currency { color: var(--primary); font-size: 1.2rem; vertical-align: middle; }
+        .currency { font-size: 0.8em; opacity: 0.7; }
 
         /* Health Bar Visual */
         .health-track {
             width: 100%;
-            max-width: 200px;
             height: 4px;
             background: #222;
             margin-top: 5px;
             border-radius: 2px;
             overflow: hidden;
+            position: relative;
         }
         
         .health-fill {
             height: 100%;
             background: var(--primary);
-            width: 20%; /* Init at 20% (100/500 scale) */
-            transition: width 0.5s ease-out, background-color 0.3s;
+            width: 100%; 
+            transition: width 0.3s ease-out, background-color 0.3s;
             box-shadow: 0 0 5px var(--primary);
         }
 
@@ -128,7 +132,8 @@
             background: var(--primary);
             color: #000;
             border: none;
-            padding: 10px 24px;
+            padding: 0 24px;
+            height: 44px;
             font-family: inherit;
             font-weight: bold;
             font-size: 1rem;
@@ -136,7 +141,6 @@
             cursor: pointer;
             clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
             transition: transform 0.1s;
-            margin-left: 15px;
         }
 
         .btn-cashout:active { transform: scale(0.95); }
@@ -291,25 +295,73 @@
 
         .overlay.active { display: flex; animation: fadeIn 0.3s; }
 
-        .overlay h1 { font-size: 3rem; margin: 0 0 20px 0; text-transform: uppercase; }
-        .overlay p { font-size: 1.2rem; margin-bottom: 30px; }
-        
-        .result-busted h1 { color: var(--danger); text-shadow: 0 0 20px var(--danger); }
-        .result-win h1 { color: var(--primary); text-shadow: 0 0 20px var(--primary); }
-        
-        .btn-restart {
-            background: transparent;
-            border: 2px solid #fff;
-            color: #fff;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: all 0.2s;
+        /* --- BET SCREEN --- */
+        #overlay-bet {
+            background: rgba(5, 5, 5, 0.98);
         }
-        .btn-restart:hover { background: #fff; color: #000; }
+        
+        .bet-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+            width: 90%;
+            max-width: 400px;
+        }
 
-        /* Hacking Animation */
+        .bet-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #333;
+            color: #fff;
+            padding: 15px 0;
+            font-size: 1.2rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+        }
+
+        .bet-btn.selected {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.4);
+        }
+
+        .bet-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #222;
+        }
+
+        .start-btn {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            font-size: 1.5rem;
+            padding: 15px 50px;
+            text-transform: uppercase;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 2px;
+        }
+        
+        .start-btn:hover {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+        }
+        
+        .start-btn:disabled {
+            border-color: #333;
+            color: #333;
+            pointer-events: none;
+        }
+
+
+        /* --- HACKING UI --- */
         .hack-window {
             border: 2px solid var(--gold); 
             padding: 20px; 
@@ -414,6 +466,24 @@
             letter-spacing: 2px;
         }
         
+        /* Result Overlay Specifics */
+        .result-busted h1 { color: var(--danger); text-shadow: 0 0 20px var(--danger); }
+        .result-win h1 { color: var(--primary); text-shadow: 0 0 20px var(--primary); }
+        .overlay h1 { font-size: 3rem; margin: 0 0 20px 0; text-transform: uppercase; }
+        .overlay p { font-size: 1.2rem; margin-bottom: 30px; }
+
+        .btn-restart {
+            background: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .btn-restart:hover { background: #fff; color: #000; }
+        
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
     </style>
@@ -424,21 +494,33 @@
 
     <header>
         <div class="jackpots">
-            <div class="jackpot-item">MINI <span>500</span></div>
-            <div class="jackpot-item">MAJOR <span>2.500</span></div>
-            <div class="jackpot-item">GRAND <span>10.000</span></div>
+            <div class="jackpot-item">MINI <span id="jp-mini">500</span></div>
+            <div class="jackpot-item">MAJOR <span id="jp-major">2.500</span></div>
+            <div class="jackpot-item">GRAND <span id="jp-grand">10.000</span></div>
         </div>
-        <div class="status-wrapper">
-            <div class="balance-group">
-                <span class="balance-label">Aktuelles Guthaben</span>
-                <div class="balance-container">
-                    <span class="currency">≋</span> <span id="balance-display">100.00</span>
-                </div>
+        
+        <div class="economy-bar">
+            <!-- Account Balance -->
+            <div class="stat-group">
+                <span class="stat-label">Konto</span>
+                <span class="stat-value account-value">
+                    <span class="currency">≋</span><span id="account-display">10000</span>
+                </span>
+            </div>
+
+            <!-- Current Run Value -->
+            <div class="stat-group" style="flex:1; margin: 0 15px;">
+                <span class="stat-label">Lauf-Wert</span>
+                <span class="stat-value run-value">
+                    <span class="currency">≋</span><span id="run-display">0</span>
+                </span>
                 <div class="health-track">
                     <div id="health-bar" class="health-fill"></div>
                 </div>
             </div>
-            <button id="btn-cashout" class="btn-cashout">AUSZAHLEN</button>
+
+            <!-- Cashout Button -->
+            <button id="btn-cashout" class="btn-cashout">Stop</button>
         </div>
     </header>
 
@@ -450,11 +532,35 @@
         <div style="padding:5px; color:#444; font-size:0.7rem;">SYSTEM BEREIT...</div>
     </footer>
 
+    <!-- BET SELECTION OVERLAY (START SCREEN) -->
+    <div id="overlay-bet" class="overlay active">
+        <h1 style="color: #fff; font-size: 2rem; border-bottom: 2px solid var(--primary); padding-bottom:10px;">SYSTEM ZUGANG</h1>
+        <p style="margin-bottom: 10px; color: #888; font-size: 0.9rem;">WÄHLE DEINEN EINSATZ</p>
+        
+        <div class="bet-grid" id="bet-grid">
+            <button class="bet-btn" onclick="game.selectBet(1)">1</button>
+            <button class="bet-btn" onclick="game.selectBet(5)">5</button>
+            <button class="bet-btn selected" onclick="game.selectBet(10)">10</button>
+            <button class="bet-btn" onclick="game.selectBet(50)">50</button>
+            <button class="bet-btn" onclick="game.selectBet(100)">100</button>
+            <button class="bet-btn" onclick="game.selectBet(500)">500</button>
+            <button class="bet-btn" style="grid-column: span 3" onclick="game.selectBet(1000)">1000</button>
+        </div>
+        
+        <div style="text-align:center; margin-bottom: 20px;">
+             <span style="color:#666; font-size:0.8rem;">AKTUELLES KONTO:</span><br>
+             <span style="color:var(--info); font-size:1.5rem; font-weight:bold;">≋ <span id="bet-screen-balance">10000</span></span>
+        </div>
+
+        <button id="btn-start-run" class="start-btn" onclick="game.startRun()">START</button>
+        <p id="bet-error" style="color: var(--danger); font-size: 0.8rem; height: 1em; margin-top: 10px;"></p>
+    </div>
+
     <!-- GAME OVER / WIN OVERLAY -->
     <div id="overlay-result" class="overlay">
         <h1 id="result-title">VERLOREN</h1>
         <p id="result-message">Verbindung abgebrochen.</p>
-        <button class="btn-restart" onclick="game.init()">Neustart</button>
+        <button class="btn-restart" onclick="game.showBetScreen()">Weiter</button>
     </div>
 
     <!-- HACKING OVERLAY -->
@@ -490,17 +596,16 @@
     <script>
         // --- GAME CONFIGURATION ---
         const CONFIG = {
-            initialBalance: 100.00,
-            jackpots: { mini: 500, major: 2500, grand: 10000 },
+            initialAccount: 10000,
+            jackpotMultipliers: { mini: 50, major: 250, grand: 1000 }, // Changed to multipliers
             delays: {
-                reveal: 1200, // Time before next row appears
-                hack: 4000,    // Duration of hack process
-                hackResult: 3000 // How long to show the result screen
+                reveal: 1200, 
+                hack: 4000,    
+                hackResult: 3000 
             },
-            maxRows: 4 // How many rows to keep visible
+            maxRows: 4 
         };
 
-        // --- OPTION DEFINITIONS ---
         const TYPES = {
             BOOST: { icon: '🚀', class: 'type-boost', label: 'Boost' },
             HEAL: { icon: '💎', class: 'type-heal', label: 'Heilen' },
@@ -509,21 +614,91 @@
             JACKPOT: { icon: '🏆', class: 'type-jackpot', label: 'Jackpot' }
         };
 
-        // --- GAME STATE ---
         const game = {
-            balance: 0,
+            account: CONFIG.initialAccount,
+            runValue: 0,
+            selectedBet: 10,
+            runBet: 0, // Store bet when run starts to keep consistent
             step: 0,
             isProcessing: false,
-            currentRow: [], // Stores data for current 3 doors
+            currentRow: [], 
             
             init: function() {
-                this.balance = CONFIG.initialBalance;
+                // Initial launch setup
+                this.updateUI();
+                this.showBetScreen();
+                this.updateJackpots(); // Init jackpots
+            },
+
+            showBetScreen: function() {
+                document.getElementById('overlay-result').classList.remove('active');
+                document.getElementById('overlay-hack').classList.remove('active');
+                document.getElementById('overlay-bet').classList.add('active');
+                
+                // Clear game stage behind
+                document.getElementById('game-stage').innerHTML = '';
+                document.getElementById('history-log').innerHTML = '';
+                
+                this.updateBetUI();
+            },
+
+            selectBet: function(amount) {
+                this.selectedBet = amount;
+                this.updateBetUI();
+                this.updateJackpots(); // Update jackpot display on bet change
+            },
+
+            updateJackpots: function() {
+                // Calculate based on selected bet
+                const mini = this.selectedBet * CONFIG.jackpotMultipliers.mini;
+                const major = this.selectedBet * CONFIG.jackpotMultipliers.major;
+                const grand = this.selectedBet * CONFIG.jackpotMultipliers.grand;
+                
+                document.getElementById('jp-mini').innerText = mini.toLocaleString('de-DE');
+                document.getElementById('jp-major').innerText = major.toLocaleString('de-DE');
+                document.getElementById('jp-grand').innerText = grand.toLocaleString('de-DE');
+            },
+
+            updateBetUI: function() {
+                // Update buttons selection state
+                const btns = document.querySelectorAll('.bet-btn');
+                btns.forEach(btn => {
+                    if(parseInt(btn.innerText) === this.selectedBet) btn.classList.add('selected');
+                    else btn.classList.remove('selected');
+                    
+                    // Disable if cant afford
+                    if(parseInt(btn.innerText) > this.account) btn.disabled = true;
+                    else btn.disabled = false;
+                });
+
+                document.getElementById('bet-screen-balance').innerText = Math.floor(this.account).toLocaleString('de-DE');
+                
+                // Disable Start button if selected bet is too high
+                const startBtn = document.getElementById('btn-start-run');
+                const errorMsg = document.getElementById('bet-error');
+                
+                if (this.selectedBet > this.account) {
+                    startBtn.disabled = true;
+                    errorMsg.innerText = "GUTHABEN NICHT AUSREICHEND";
+                } else {
+                    startBtn.disabled = false;
+                    errorMsg.innerText = "";
+                }
+            },
+
+            startRun: function() {
+                if(this.selectedBet > this.account) return;
+
+                // Deduct Bet
+                this.account -= this.selectedBet;
+                this.runValue = this.selectedBet; // Run starts with the bet value
+                this.runBet = this.selectedBet; // Lock in bet for calculations
+                
                 this.step = 0;
                 this.isProcessing = false;
                 
-                document.getElementById('overlay-result').classList.remove('active');
-                document.getElementById('history-log').innerHTML = '';
-                document.getElementById('game-stage').innerHTML = ''; // Clear stage completely on new game
+                document.getElementById('overlay-bet').classList.remove('active');
+                document.getElementById('history-log').innerHTML = '<div style="padding:5px;">SYSTEM NEUSTART...</div>';
                 
                 this.updateUI();
                 this.generateNextRow();
@@ -534,57 +709,45 @@
                 this.step++;
                 const container = document.getElementById('game-stage');
                 
-                // --- STREAM LOGIC: Handle old rows ---
-                // Mark existing rows as 'past'
                 const existingRows = Array.from(container.children);
                 existingRows.forEach((row, idx) => {
                     row.classList.add('past-row');
                     if (idx > 0) row.classList.add('past-row-2');
                 });
                 
-                // Cleanup: Keep only maxRows
                 if (existingRows.length >= CONFIG.maxRows) {
                     container.lastElementChild.remove();
                 }
 
-                // 1. Determine Archetype (Weighted Random)
+                // Weighted Random Archetypes
                 const rand = Math.random();
                 let archetype = '';
-                
-                if (rand < 0.40) archetype = 'SAFE';      // 40%
-                else if (rand < 0.70) archetype = 'MINE'; // 30%
-                else if (rand < 0.90) archetype = 'SQUEEZE'; // 20%
-                else archetype = 'TEASE';                 // 10%
+                if (rand < 0.40) archetype = 'SAFE';      
+                else if (rand < 0.70) archetype = 'MINE'; 
+                else if (rand < 0.90) archetype = 'SQUEEZE'; 
+                else archetype = 'TEASE';                 
 
-                // 2. Generate Options based on Archetype
                 let options = [];
-
                 if (archetype === 'SAFE') {
-                    // 2 Pos, 1 Neg
                     options.push(this.createOption('good'));
                     options.push(this.createOption('good'));
                     options.push(this.createOption('bad'));
                 } else if (archetype === 'MINE') {
-                    // 1 Pos, 1 Neg, 1 Trap
                     options.push(this.createOption('good'));
                     options.push(this.createOption('bad'));
                     options.push(this.createOption('trap'));
                 } else if (archetype === 'SQUEEZE') {
-                    // 2 Neg, 1 Trap
                     options.push(this.createOption('bad'));
                     options.push(this.createOption('bad'));
                     options.push(this.createOption('trap'));
-                } else { // TEASE
-                    // 1 Jackpot, 2 Bad/Trap
+                } else { 
                     options.push(this.createOption('jackpot'));
                     options.push(this.createOption('bad'));
                     options.push(this.createOption('trap'));
                 }
 
-                // 3. Shuffle Positions
                 this.currentRow = options.sort(() => Math.random() - 0.5);
 
-                // 4. Render DOM
                 const rowDiv = document.createElement('div');
                 rowDiv.className = 'row-container slide-in';
 
@@ -593,7 +756,6 @@
                     door.className = `door ${opt.def.class}`;
                     door.onclick = (e) => this.handleChoice(index, e);
                     
-                    // Inner content (Hidden initially)
                     let displayVal = opt.display;
                     
                     door.innerHTML = `
@@ -606,7 +768,6 @@
                     rowDiv.appendChild(door);
                 });
 
-                // Prepend to show at top
                 container.prepend(rowDiv);
             },
 
@@ -615,43 +776,41 @@
                     return { type: 'TRAP', val: 0, display: 'TOT', def: TYPES.TRAP };
                 }
                 if (category === 'jackpot') {
-                    // Determine which Tier this jackpot is trying to be
                     const r = Math.random();
                     let tier = 'MINI';
-                    if (r > 0.6) tier = 'MAJOR'; // 30% chance
-                    if (r > 0.9) tier = 'GRAND'; // 10% chance
-                    
+                    if (r > 0.6) tier = 'MAJOR'; 
+                    if (r > 0.9) tier = 'GRAND'; 
                     return { type: 'JACKPOT', tier: tier, val: 0, display: '???', def: TYPES.JACKPOT };
                 }
                 
                 if (category === 'good') {
-                    // 50/50 between Multiplier and Heal
+                    // 50/50 Multiplier / Flat
                     if (Math.random() > 0.5) {
-                        const val = (Math.random() * (1.5 - 1.1) + 1.1).toFixed(2); // 1.1x to 1.5x
+                        const val = (Math.random() * (1.5 - 1.1) + 1.1).toFixed(2); 
                         return { type: 'MULT', val: parseFloat(val), display: `x${val}`, def: TYPES.BOOST };
                     } else {
-                        const val = Math.floor(Math.random() * 40) + 10; // +10 to +50
+                        // Flat amount relative to bet size to scale properly
+                        const base = Math.max(1, Math.floor(this.runBet * 0.2)); // 20% of runBet
+                        const val = Math.floor(Math.random() * base) + base; 
                         return { type: 'ADD', val: val, display: `+${val}`, def: TYPES.HEAL };
                     }
                 }
 
                 if (category === 'bad') {
-                    // Damage: Percentage cut or flat loss
                     if (Math.random() > 0.5) {
-                        const val = (Math.random() * (0.9 - 0.6) + 0.6).toFixed(2); // 0.6x to 0.9x
+                        const val = (Math.random() * (0.9 - 0.6) + 0.6).toFixed(2); 
                         return { type: 'MULT', val: parseFloat(val), display: `x${val}`, def: TYPES.DAMAGE };
                     } else {
-                        const val = Math.floor(Math.random() * 30) + 10; // -10 to -40
+                        const base = Math.max(1, Math.floor(this.runBet * 0.15));
+                        const val = Math.floor(Math.random() * base) + base; 
                         return { type: 'SUB', val: val, display: `-${val}`, def: TYPES.DAMAGE };
                     }
                 }
             },
 
-            // --- CORE LOGIC: Interaction ---
             handleChoice: async function(index, event) {
                 if (this.isProcessing) return;
                 
-                // Prevent clicking old rows
                 const currentContainer = document.querySelector('.row-container:first-child');
                 const clickedRow = event.target.closest('.row-container');
                 if (clickedRow !== currentContainer) return;
@@ -661,21 +820,19 @@
                 const choice = this.currentRow[index];
                 const doors = currentContainer.querySelectorAll('.door');
 
-                // 1. Visual Reveal (Ghost Engine)
                 doors.forEach((d, i) => {
                     d.classList.add('disabled');
                     if (i === index) {
                         d.classList.add('opened');
                     } else {
-                        d.classList.add('ghost'); // The Ghost Reveal
+                        d.classList.add('ghost'); 
                     }
                 });
 
-                // 2. Logic Execution
                 let logMsg = "";
 
                 if (choice.type === 'TRAP') {
-                    this.balance = 0;
+                    this.runValue = 0;
                     this.endGame('busted', 'Sicherheitsfalle ausgelöst.');
                     return;
                 } 
@@ -685,36 +842,33 @@
                 } 
                 
                 else if (choice.type === 'MULT') {
-                    this.balance *= choice.val;
+                    this.runValue *= choice.val;
                     logMsg = `x${choice.val}`;
                 } 
                 
                 else if (choice.type === 'ADD') {
-                    this.balance += choice.val;
+                    this.runValue += choice.val;
                     logMsg = `+${choice.val}`;
                 } 
                 
                 else if (choice.type === 'SUB') {
-                    this.balance -= choice.val;
+                    this.runValue -= choice.val;
                     logMsg = `-${choice.val}`;
                 }
 
-                // Check survival for standard turns
-                if (this.balance <= 0.01) {
-                    this.balance = 0;
-                    this.endGame('busted', 'Guthaben aufgebraucht.');
+                // Check survival
+                if (this.runValue <= 0.01) {
+                    this.runValue = 0;
+                    this.endGame('busted', 'Einsatz verloren.');
                     return;
                 }
 
-                // Update UI
                 this.updateUI();
                 
-                // Log History (if not jackpot, which handles its own log)
                 if (choice.type !== 'JACKPOT') {
                     this.addLog(this.step, logMsg, this.currentRow, index);
                 }
 
-                // Prepare Next Turn
                 setTimeout(() => {
                     this.isProcessing = false;
                     this.generateNextRow();
@@ -722,38 +876,32 @@
             },
 
             runJackpotSequence: async function(choice, doorElement) {
-                // Elements
                 const hackOverlay = document.getElementById('overlay-hack');
                 const hackBar = document.getElementById('hack-bar');
                 const hackTerm = document.getElementById('hack-terminal');
                 const hackTargetDisplay = document.getElementById('hack-target-display');
                 
-                // Views
                 const processView = document.getElementById('hack-process-view');
                 const resultView = document.getElementById('hack-result-view');
                 
-                // Reset Views
                 processView.style.display = 'flex';
                 resultView.style.display = 'none';
 
-                // Update Target Info
-                const potentialWin = CONFIG.jackpots[choice.tier.toLowerCase()];
-                hackTargetDisplay.innerText = `ZIEL: ${choice.tier} TRESOR (${potentialWin})`;
+                // Use runBet for calculation
+                const potentialWin = this.runBet * CONFIG.jackpotMultipliers[choice.tier.toLowerCase()];
+                hackTargetDisplay.innerText = `ZIEL: ${choice.tier} TRESOR (${potentialWin.toLocaleString('de-DE')})`;
                 
                 hackOverlay.classList.add('active');
                 
-                // Reset styling
                 hackBar.style.width = '0%';
                 hackBar.style.transition = 'none';
                 hackTerm.innerHTML = '> VERBINDUNGSAUFBAU...<br>';
                 
-                // Start Animation
                 setTimeout(() => {
                     hackBar.style.transition = `width ${CONFIG.delays.hack/1000}s linear`;
                     hackBar.style.width = '100%';
                 }, 50);
 
-                // Simulate Terminal Logs
                 const logs = [
                     "Firewall: Bypass läuft...",
                     "Port 443: Offen...",
@@ -779,7 +927,6 @@
                     setTimeout(async () => {
                         clearInterval(logInterval);
                         
-                        // Determine Outcome
                         let winChance = 0.10; 
                         if (choice.tier === 'MINI') winChance = 0.15;
                         if (choice.tier === 'GRAND') winChance = 0.05;
@@ -789,42 +936,33 @@
                         const resultAmount = document.getElementById('hack-result-amount');
                         const resultDesc = document.getElementById('hack-result-desc');
 
-                        // Switch to Result View
                         processView.style.display = 'none';
                         resultView.style.display = 'flex';
                         
                         if (isWin) {
-                            // WIN STATE
-                            this.balance += potentialWin;
+                            this.runValue += potentialWin;
                             
                             resultTitle.innerText = "ZUGRIFF ERFOLGREICH";
                             resultTitle.style.color = "var(--primary)";
-                            
-                            resultAmount.innerText = `+${potentialWin}`;
+                            resultAmount.innerText = `+${potentialWin.toLocaleString('de-DE')}`;
                             resultAmount.style.color = "var(--gold)";
-                            
                             resultDesc.innerText = "TRESOR INHALT TRANSFERIERT";
 
-                            // Door Update
-                            doorElement.querySelector('.door-value').innerText = `+${potentialWin}`;
+                            doorElement.querySelector('.door-value').innerText = `+${potentialWin.toLocaleString('de-DE')}`;
                             doorElement.querySelector('.door-desc').innerText = "GEKNACKT!";
                             doorElement.style.borderColor = 'var(--gold)';
                             this.addLog(this.step, `${choice.tier} GEWINN +${potentialWin}`, this.currentRow, -1); 
                         
                         } else {
-                            // LOSE STATE
-                            const pityAmt = 15;
-                            this.balance += pityAmt;
+                            const pityAmt = Math.floor(this.runBet * 0.1) + 5; // Pity relative to bet
+                            this.runValue += pityAmt;
                             
                             resultTitle.innerText = "ZUGRIFF VERWEIGERT";
                             resultTitle.style.color = "var(--danger)";
-                            
                             resultAmount.innerText = `+${pityAmt}`;
                             resultAmount.style.color = "var(--info)";
-                            
                             resultDesc.innerText = "NUR RESTDATEN GEFUNDEN";
 
-                            // Door Update
                             doorElement.querySelector('.door-value').innerText = `+${pityAmt}`;
                             doorElement.querySelector('.door-desc').innerText = "ABGEWEHRT";
                             doorElement.classList.remove('type-jackpot');
@@ -833,11 +971,7 @@
                         }
                         
                         this.updateUI();
-
-                        // WAIT TO READ RESULT
                         await new Promise(r => setTimeout(r, CONFIG.delays.hackResult));
-
-                        // Close Overlay
                         hackOverlay.classList.remove('active');
                         resolve();
 
@@ -848,7 +982,6 @@
             addLog: function(step, result, rowData, pickedIndex) {
                 const history = document.getElementById('history-log');
                 
-                // Find what was missed (Ghost Data)
                 let missedIcons = "";
                 rowData.forEach((opt, i) => {
                     if (i !== pickedIndex) missedIcons += ` ${opt.def.icon}`;
@@ -861,35 +994,39 @@
                     <span class="log-missed">Verpasst: ${missedIcons}</span>
                 `;
                 history.prepend(div);
-                
-                // Remove 'recent' class after animation
                 setTimeout(() => div.classList.remove('recent'), 1000);
             },
 
             updateUI: function() {
-                const balEl = document.getElementById('balance-display');
-                balEl.innerText = this.balance.toFixed(2);
+                document.getElementById('account-display').innerText = Math.floor(this.account).toLocaleString('de-DE');
+                document.getElementById('run-display').innerText = this.runValue.toFixed(2);
                 
-                // Update Health Bar
+                // Update Health Bar logic
+                // Now scale is relative to the Bet size (e.g. 5x Bet is "full" health/success)
                 const healthBar = document.getElementById('health-bar');
-                // Calculate percentage based on 500 as "full" visual reference
-                let pct = (this.balance / 500) * 100;
+                const targetMultiplier = 5; 
+                let pct = (this.runValue / (this.runBet * targetMultiplier)) * 100;
+                
+                // Adjust min visibility
+                if (pct < 5 && this.runValue > 0) pct = 5;
                 if (pct > 100) pct = 100;
+                
                 healthBar.style.width = `${pct}%`;
 
-                // Color based on health
-                if (this.balance > 100) healthBar.style.backgroundColor = 'var(--primary)'; // Green
-                else if (this.balance > 50) healthBar.style.backgroundColor = 'var(--warn)'; // Orange
-                else healthBar.style.backgroundColor = 'var(--danger)'; // Red
+                // Color
+                if (this.runValue >= this.runBet) healthBar.style.backgroundColor = 'var(--primary)'; 
+                else if (this.runValue >= this.runBet * 0.5) healthBar.style.backgroundColor = 'var(--warn)'; 
+                else healthBar.style.backgroundColor = 'var(--danger)'; 
 
                 const cashoutBtn = document.getElementById('btn-cashout');
-                if (this.balance <= 0) cashoutBtn.disabled = true;
+                if (this.runValue <= 0) cashoutBtn.disabled = true;
                 else cashoutBtn.disabled = false;
             },
 
             cashout: function() {
-                if (this.balance > 0) {
-                    this.endGame('win', `Du bist mit <span style="color:var(--primary)">${this.balance.toFixed(2)}</span> entkommen.`);
+                if (this.runValue > 0) {
+                    this.account += this.runValue; // Add winnings to main account
+                    this.endGame('win', `Sichergestellt: <span style="color:var(--primary)">${this.runValue.toFixed(2)}</span>`);
                 }
             },
 
@@ -904,11 +1041,11 @@
                 if (type === 'win') {
                     overlay.classList.remove('result-busted');
                     overlay.classList.add('result-win');
-                    title.innerText = "MISSION ERFÜLLT";
+                    title.innerText = "LAUF BEENDET";
                 } else {
                     overlay.classList.remove('result-win');
                     overlay.classList.add('result-busted');
-                    title.innerText = "GESCHEITERT";
+                    title.innerText = "SIGNAL VERLOREN";
                 }
                 
                 msg.innerHTML = message;
